@@ -12,25 +12,33 @@ def initialize_session_state():
         st.session_state.messages = [
             {"role": "assistant", "content": "Hi! How may I assist you today?"}
         ]
-    # if "audio_initialized" not in st.session_state:
-    #     st.session_state.audio_initialized = False
 
 initialize_session_state()
 
+# Add a logo to the top left
+st.image("./logo.png", width=250)  # Adjust the path and width as needed
+
 st.title("Welcome to Kathabarta 🖋")
 
-# Create footer container for the microphone
-footer_container = st.container()
-with footer_container:
-    audio_bytes = audio_recorder()
 
-
+# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
+# Create footer container for the microphone and text input
+footer_container = st.container()
+with footer_container:
+    col1, col2, col3 = st.columns([1, 2, 1])  # Adjust the width ratio as needed
+    with col2:
+        st.markdown("""""",unsafe_allow_html=True)
+        audio_bytes = audio_recorder(key="mic-container")
+
+    st.markdown("""""",unsafe_allow_html=True)
+    manual_input = st.text_input("Type your question here:", key="manual_input", help="You can type your question here")
+
+# Handle audio input
 if audio_bytes:
-    # Write the audio bytes to a file
     with st.spinner("Transcribing..."):
         webm_file_path = "temp_audio.mp3"
         with open(webm_file_path, "wb") as f:
@@ -43,7 +51,14 @@ if audio_bytes:
                 st.write(transcript)
             os.remove(webm_file_path)
 
-if st.session_state.messages[-1]["role"] != "assistant":
+# Handle manual text input
+if manual_input:
+    st.session_state.messages.append({"role": "user", "content": manual_input})
+    with st.chat_message("user"):
+        st.write(manual_input)
+
+# Generate assistant response if last message is from the user
+if st.session_state.messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
         with st.spinner("Thinking🤔..."):
             final_response = get_answer(st.session_state.messages)
@@ -55,4 +70,4 @@ if st.session_state.messages[-1]["role"] != "assistant":
         os.remove(audio_file)
 
 # Float the footer container and provide CSS to target it with
-footer_container.float("bottom: 0rem;")
+footer_container.float("bottom: 2rem;")
